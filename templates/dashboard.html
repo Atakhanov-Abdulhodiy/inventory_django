@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="page-title" data-lang="nav_dashboard">Dashboard</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3 data-lang="products_title">Products</h3>
+        <div class="number">{{ stats.total_products }}</div>
+    </div>
+
+    <div class="stat-card">
+        <h3 data-lang="customers_title">Customers</h3>
+        <div class="number">{{ stats.total_customers }}</div>
+    </div>
+
+    <div class="stat-card">
+        <h3 data-lang="invoices_title">Invoices</h3>
+        <div class="number">{{ stats.total_invoices }}</div>
+    </div>
+
+    <div class="stat-card">
+        <h3 data-lang="batches_title">Stock Batches</h3>
+        <div class="number">{{ stats.total_batches }}</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px;">
+    <div class="chart-container">
+        <h3 class="chart-title" data-lang="sales_trend">Sales Trend</h3>
+        <canvas id="salesChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+        <h3 class="chart-title" data-lang="stock_status">Stock Status</h3>
+        <canvas id="stockChart"></canvas>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+    <div class="chart-container">
+        <h3 class="chart-title" data-lang="transactions">Transactions</h3>
+        <canvas id="transactionChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+        <h3 class="chart-title" data-lang="revenue">Revenue</h3>
+        <canvas id="revenueChart"></canvas>
+    </div>
+</div>
+
+<div class="chart-container">
+    <h3 class="chart-title" data-lang="recent_activity">Recent Activity</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in recent_transactions %}
+            <tr>
+                <td><strong>{{ transaction.transaction_type }}</strong></td>
+                <td>{{ transaction.batch.product.name }}</td>
+                <td>{{ transaction.quantity }}</td>
+                <td>{{ transaction.timestamp|date:"M d, Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 40px;">No recent activity</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Professional color palette
+    const colors = {
+        primary: '#14b8a6',
+        blue: '#3b82f6',
+        purple: '#8b5cf6',
+        orange: '#f59e0b',
+        green: '#10b981',
+        red: '#ef4444',
+        pink: '#ec4899',
+        indigo: '#6366f1'
+    };
+
+    // Get theme colors
+    function getThemeColors() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            gridColor: isDark ? '#3f3f46' : '#f4f4f5',
+            textColor: isDark ? '#a1a1aa' : '#71717a'
+        };
+    }
+
+    const themeColors = getThemeColors();
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = themeColors.textColor;
+
+    // Create gradient
+    function createGradient(ctx, color) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, color + '40');
+        gradient.addColorStop(1, color + '00');
+        return gradient;
+    }
+
+    // Sales Chart - Professional gradient
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    const salesGradient = createGradient(salesCtx, colors.primary);
+
+    new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'Sales Volume',
+                data: [65, 89, 52, 97, 74, 103],
+                borderColor: colors.primary,
+                backgroundColor: salesGradient,
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+                pointBackgroundColor: colors.primary,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: colors.primary,
+                pointHoverBorderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    borderRadius: 8,
+                    titleFont: { size: 13, weight: '600' },
+                    bodyFont: { size: 12 }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: themeColors.gridColor, drawBorder: false },
+                    border: { display: false },
+                    ticks: { color: themeColors.textColor }
+                },
+                x: {
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: { color: themeColors.textColor }
+                }
+            }
+        }
+    });
+
+    // Stock Chart - Multi-color doughnut
+    new Chart(document.getElementById('stockChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['In Stock', 'Low Stock', 'Out of Stock'],
+            datasets: [{
+                data: [{{ stats.total_batches }}, 8, 3],
+            backgroundColor: [colors.green, colors.orange, colors.red],
+            borderWidth: 0,
+            hoverOffset: 8
+        }]
+    },
+        options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 16,
+                    font: { size: 11, weight: '500' },
+                    color: themeColors.textColor,
+                    usePointStyle: true,
+                    pointStyle: 'circle'
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 12,
+                borderRadius: 8
+            }
+        }
+    }
+});
+
+    // Transaction Chart - Colorful bars
+    new Chart(document.getElementById('transactionChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Purchase', 'Sale', 'Return', 'Adjust', 'Transfer'],
+            datasets: [{
+                label: 'Count',
+                data: [85, 67, 15, 23, 42],
+                backgroundColor: [
+                    colors.blue,
+                    colors.green,
+                    colors.orange,
+                    colors.purple,
+                    colors.indigo
+                ],
+                borderRadius: 6,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    borderRadius: 8
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: themeColors.gridColor, drawBorder: false },
+                    border: { display: false },
+                    ticks: { color: themeColors.textColor }
+                },
+                x: {
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: { color: themeColors.textColor }
+                }
+            }
+        }
+    });
+
+    // Revenue Chart - Professional gradient line
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const revenueGradient = createGradient(revenueCtx, colors.blue);
+
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [{
+                label: 'Revenue (NOK)',
+                data: [18500, 26200, 21800, 31500],
+                borderColor: colors.blue,
+                backgroundColor: revenueGradient,
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: colors.blue,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: colors.blue,
+                pointHoverBorderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    borderRadius: 8,
+                    callbacks: {
+                        label: function (context) {
+                            return 'NOK ' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: themeColors.gridColor, drawBorder: false },
+                    border: { display: false },
+                    ticks: {
+                        color: themeColors.textColor,
+                        callback: function (value) {
+                            return 'NOK ' + value.toLocaleString();
+                        }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: { color: themeColors.textColor }
+                }
+            }
+        }
+    });
+
+    // Re-render charts on theme change
+    document.querySelector('#theme-btn').addEventListener('click', function () {
+        setTimeout(() => {
+            location.reload();
+        }, 300);
+    });
+</script>
+{% endblock %}

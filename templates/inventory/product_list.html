@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<h1 class="page-title" data-lang="nav_products">Products</h1>
+
+<div class="chart-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>SKU</th>
+                <th>Name</th>
+                <th>Costing</th>
+                <th>Dimensions</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td><strong>#{{ product.id }}</strong></td>
+                <td><code>{{ product.sku }}</code></td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.get_costing_method_display }}</td>
+                <td style="font-family: 'Courier New', monospace;">
+                    {{ product.length|floatformat:0 }} × {{ product.width|floatformat:0 }} × {{
+                    product.height|floatformat:0 }}
+                </td>
+                <td>
+                    <a href="/admin/inventory/product/{{ product.id }}/change/"
+                        style="color: #14b8a6; text-decoration: none; font-weight: 500;">
+                        Edit
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 40px;">No products</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 24px;">
+    <a href="/" class="btn btn-secondary" data-lang="back">← Back</a>
+    <a href="/admin/inventory/product/add/" class="btn" style="margin-left: 8px;" data-lang="add_product">Add
+        Product</a>
+</div>
+{% endblock %}
